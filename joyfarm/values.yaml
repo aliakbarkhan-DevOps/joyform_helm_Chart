@@ -1,0 +1,68 @@
+replicaCount: 2
+
+image:
+  repository: yourregistry.azurecr.io/jormfarm
+  tag: latest
+  pullPolicy: IfNotPresent
+
+# If AKS has AcrPull permission through managed identity or service principal,
+# you can leave this empty.
+imagePullSecrets: []
+# imagePullSecrets:
+#   - acr-pull-secret
+
+service:
+  type: ClusterIP
+  port: 80
+
+ingress:
+  enabled: true
+  className: nginx
+  annotations: {}
+  hosts:
+    - host: your-public-domain.com
+      paths:
+        - /
+
+env: []
+# env:
+#   - name: WORDPRESS_ENVIRONMENT
+#     value: production
+
+deployment:
+  revisionHistoryLimit: 5
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxUnavailable: 25%
+      maxSurge: 25%
+
+resources: {}
+# resources:
+#   requests:
+#     cpu: 100m
+#     memory: 256Mi
+#   limits:
+#     cpu: 500m
+#     memory: 512Mi
+
+externalSecrets:
+  enabled: true
+
+  secretStore:
+    name: wordpress-azure-kv-store
+    azureKeyVaultName: your-keyvault-name
+    serviceAccountName: your-workload-identity-sa-name
+
+  secrets:
+    - name: wordpress-db-secret
+      refreshInterval: 10m
+      data:
+        - secretKey: WORDPRESS_DB_HOST
+          remoteRefKey: wordpress-db-host
+        - secretKey: WORDPRESS_DB_USER
+          remoteRefKey: wordpress-db-user
+        - secretKey: WORDPRESS_DB_PASSWORD
+          remoteRefKey: wordpress-db-password
+        - secretKey: WORDPRESS_DB_NAME
+          remoteRefKey: wordpress-db-name
